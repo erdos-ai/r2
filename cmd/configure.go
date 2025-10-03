@@ -12,26 +12,8 @@ import (
 	"github.com/erdos-one/r2/pkg"
 
 	"github.com/spf13/cobra"
+	"gopkg.in/ini.v1"
 )
-
-var (
-	emptyLineRe       = regexp.MustCompile(`^\n$`)
-	profilesRe        = regexp.MustCompile(`\[[^\]]+\](?:[^[]*(?:account_id|access_key_id|secret_access_key)\s*=\s*[^\s\n]+[^[]*)*`)
-	profileNameRe     = regexp.MustCompile(`\[\w+\]`)
-	profileNameExtRe  = regexp.MustCompile(`\[(\w+)\]`)
-	accountIDRe       = regexp.MustCompile(`account_id\s*=\s*(\w+)`)
-	accessKeyIDRe     = regexp.MustCompile(`access_key_id\s*=\s*(\w+)`)
-	secretAccessKeyRe = regexp.MustCompile(`secret_access_key\s*=\s*(\w+)`)
-)
-
-// configString formats a set of Cloudflare R2 credentials into a string that can be written to the
-// ~/.r2 configuration file. Allowing for multiple profiles, each profile is formatted as a section
-// with the profile name in square brackets. The profile name is followed by the account ID, access
-// key ID, and secret access key.
-func configString(c pkg.Config) string {
-	configTemplate := "[%s]\naccount_id=%s\naccess_key_id=%s\nsecret_access_key=%s"
-	return fmt.Sprintf(configTemplate, c.Profile, c.AccountID, c.AccessKeyID, c.SecretAccessKey)
-}
 
 // getConfigPath returns the path to the ~/.r2 configuration file, accounting for different
 // operating systems' conventions for naming the home directory.
@@ -46,9 +28,43 @@ func getConfigPath() string {
 // R2ConfigFile globally defines the path to the ~/.r2 configuration file.
 var R2ConfigFile = getConfigPath()
 
+// profileNameRegex defines the valid characters for profile names
+var profileNameRegex = regexp.MustCompile(`^[a-zA-Z0-9_\-\.]+$`)
+
+// normalizeProfileName converts a profile name to lowercase and trims whitespace.
+// This ensures case-insensitive profile handling.
+func normalizeProfileName(name string) string {
+	return strings.ToLower(strings.TrimSpace(name))
+}
+
+// validateProfileName checks if a profile name is valid.
+// Valid profile names contain only alphanumeric characters, underscores, hyphens, and dots.
+func validateProfileName(name string) error {
+	if name == "" {
+		return fmt.Errorf("profile name cannot be empty")
+	}
+	if !profileNameRegex.MatchString(name) {
+		return fmt.Errorf("profile name can only contain alphanumeric characters, underscores, hyphens, and dots")
+	}
+	return nil
+}
+
+// ensureSecurePermissions sets secure file permissions (0600) on the config file.
+// This ensures that only the owner can read/write the file containing credentials.
+func ensureSecurePermissions() {
+	if _, err := os.Stat(R2ConfigFile); err == nil {
+		if err := os.Chmod(R2ConfigFile, 0600); err != nil {
+			log.Printf("Warning: Failed to set secure permissions on config file: %v", err)
+		}
+	}
+}
+
 // getProfile returns the Cloudflare R2 credentials for the specified profile. If the profile does
 // not exist, it is created interactively and saved to the ~/.r2 configuration file.
 func getProfile(profileName string) pkg.Config {
+	// Normalize profile name for case-insensitive lookup
+	profileName = normalizeProfileName(profileName)
+
 	// Get profiles
 	profiles := getConfig(false)
 
@@ -80,7 +96,7 @@ func getCredentials(profile string) pkg.Config {
 			profile = "default"
 		}
 	}
-	c.Profile = profile
+	c.Profile = normalizeProfileName(profile)
 
 	// Get account ID
 	fmt.Print("Account ID: ")
@@ -99,6 +115,9 @@ func getCredentials(profile string) pkg.Config {
 
 // Parse configuration file and return profiles
 func getConfig(createIfNotPresent bool) map[string]pkg.Config {
+	// Ensure secure permissions on existing config file
+	ensureSecurePermissions()
+
 	// Create configuration file if it doesn't exist
 	if _, err := os.Stat(R2ConfigFile); os.IsNotExist(err) {
 		// If not creating configuration file, return empty map
@@ -106,53 +125,43 @@ func getConfig(createIfNotPresent bool) map[string]pkg.Config {
 			return make(map[string]pkg.Config)
 		}
 
-		f, err := os.Create(R2ConfigFile)
+		// Create file with secure permissions (0600 - owner read/write only)
+		f, err := os.OpenFile(R2ConfigFile, os.O_CREATE|os.O_WRONLY, 0600)
 		if err != nil {
 			log.Fatal(err)
 		}
-		defer f.Close()
+		f.Close()
 
 		// Get credentials interactively and write to configuration file
 		writeConfig(getCredentials(""))
 	}
 
-	// Read configuration file
-	c, err := os.ReadFile(R2ConfigFile)
+	// Load INI file
+	cfg, err := ini.Load(R2ConfigFile)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Failed to load config file: %v", err)
 	}
 
-	// Remove empty lines
-	configString := emptyLineRe.ReplaceAllString(string(c), "")
+	// Parse sections into profiles
+	profiles := make(map[string]pkg.Config)
 
-	// Parse configuration file into profiles
-	var profiles = make(map[string]pkg.Config)
-
-	for _, p := range profilesRe.FindAllString(configString, -1) {
-		// Parse profiles
-		var profile pkg.Config
-
-		// Get profile name
-		if profileNameRe.MatchString(p) {
-			profile.Profile = profileNameExtRe.FindAllStringSubmatch(p, -1)[0][1]
+	for _, section := range cfg.Sections() {
+		// Skip default section (unnamed)
+		if section.Name() == ini.DEFAULT_SECTION {
+			continue
 		}
 
-		// Get account ID
-		if accountIDRe.MatchString(p) {
-			profile.AccountID = accountIDRe.FindAllStringSubmatch(p, -1)[0][1]
+		profile := pkg.Config{
+			Profile:         normalizeProfileName(section.Name()),
+			AccountID:       section.Key("account_id").String(),
+			AccessKeyID:     section.Key("access_key_id").String(),
+			SecretAccessKey: section.Key("secret_access_key").String(),
 		}
 
-		// Get access key ID
-		if accessKeyIDRe.MatchString(p) {
-			profile.AccessKeyID = accessKeyIDRe.FindAllStringSubmatch(p, -1)[0][1]
+		// Only add if has ALL credentials (complete profile)
+		if profile.AccountID != "" && profile.AccessKeyID != "" && profile.SecretAccessKey != "" {
+			profiles[normalizeProfileName(section.Name())] = profile
 		}
-
-		// Get secret access key
-		if secretAccessKeyRe.MatchString(p) {
-			profile.SecretAccessKey = secretAccessKeyRe.FindAllStringSubmatch(p, -1)[0][1]
-		}
-
-		profiles[profile.Profile] = profile
 	}
 
 	return profiles
@@ -183,47 +192,135 @@ func listProfiles() []string {
 	return profileNames
 }
 
+// sortConfig ensures profiles are sorted with 'default' first, then alphabetically (case-insensitive).
+// This maintains consistency in the config file format.
+func sortConfig(cfg *ini.File) *ini.File {
+	sorted := ini.Empty()
+	sections := cfg.Sections()
+
+	// Collect section names
+	var names []string
+	var defaultSection *ini.Section
+
+	for _, sec := range sections {
+		if sec.Name() == ini.DEFAULT_SECTION {
+			continue
+		}
+		if sec.Name() == "default" {
+			defaultSection = sec
+		} else {
+			names = append(names, sec.Name())
+		}
+	}
+
+	// Sort non-default sections alphabetically (case-insensitive)
+	sort.Slice(names, func(i, j int) bool {
+		return strings.ToLower(names[i]) < strings.ToLower(names[j])
+	})
+
+	// Add default first
+	if defaultSection != nil {
+		copySection(sorted, defaultSection)
+	}
+
+	// Add others in sorted order
+	for _, name := range names {
+		copySection(sorted, cfg.Section(name))
+	}
+
+	return sorted
+}
+
+// copySection copies a section and all its keys from source to destination INI file
+func copySection(dst *ini.File, src *ini.Section) {
+	newSec, _ := dst.NewSection(src.Name())
+	for _, key := range src.Keys() {
+		newSec.Key(key.Name()).SetValue(key.String())
+	}
+}
+
 // writeConfig writes the provided profiles to the ~/.r2 configuration file. If a profile already
 // exists, it is overwritten. If all credentials are not provided, the function fails. Profiles are
 // sorted alphabetically, irrespective of case, with the default profile always first.
 func writeConfig(c pkg.Config) {
-	// Read configuration file
-	profiles := getConfig(false)
+	// Normalize and validate profile name
+	c.Profile = normalizeProfileName(c.Profile)
+	if err := validateProfileName(c.Profile); err != nil {
+		log.Fatalf("Invalid profile name: %v", err)
+	}
 
-	// If not all credentials are provided or contain only whitespace, fail
-	if strings.TrimSpace(c.AccountID) == "" || strings.TrimSpace(c.AccessKeyID) == "" || strings.TrimSpace(c.SecretAccessKey) == "" {
+	// Trim whitespace from credentials
+	c.AccountID = strings.TrimSpace(c.AccountID)
+	c.AccessKeyID = strings.TrimSpace(c.AccessKeyID)
+	c.SecretAccessKey = strings.TrimSpace(c.SecretAccessKey)
+
+	// Validate credentials
+	if c.AccountID == "" || c.AccessKeyID == "" || c.SecretAccessKey == "" {
 		log.Fatal("All credentials must be provided and cannot be empty or contain only whitespace")
 	}
 
-	// Add profile to configuration
-	profiles[c.Profile] = c
+	// Ensure secure permissions on existing config file
+	ensureSecurePermissions()
 
-	// Format profile strings and sort alphabetically (default profile is always first)
-	var configStrings []string
-	for _, p := range profiles {
-		if p.Profile != "default" {
-			configStrings = append(configStrings, configString(p))
+	// Load or create INI file
+	var cfg *ini.File
+	var err error
+
+	if _, statErr := os.Stat(R2ConfigFile); os.IsNotExist(statErr) {
+		cfg = ini.Empty()
+	} else {
+		cfg, err = ini.Load(R2ConfigFile)
+		if err != nil {
+			log.Fatalf("Failed to load config file: %v", err)
 		}
 	}
 
-	sort.Slice(configStrings, func(i, j int) bool {
-		return strings.ToLower(configStrings[i]) < strings.ToLower(configStrings[j])
-	})
-
-	if _, ok := profiles["default"]; ok {
-		configStrings = append([]string{configString(profiles["default"])}, configStrings...)
+	// Delete any existing sections that normalize to the same name (for migration)
+	// This handles cases where old config has [PRODUCTION] and we're writing [production]
+	for _, section := range cfg.Sections() {
+		if section.Name() == ini.DEFAULT_SECTION {
+			continue
+		}
+		if normalizeProfileName(section.Name()) == c.Profile {
+			cfg.DeleteSection(section.Name())
+		}
 	}
 
-	// Write configuration to file
-	f, err := os.Create(R2ConfigFile)
+	// Create new section with normalized name
+	section, err := cfg.NewSection(c.Profile)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Failed to create section: %v", err)
 	}
-	defer f.Close()
-	_, err = f.WriteString(strings.Join(configStrings, "\n\n") + "\n")
+
+	// Set values
+	section.Key("account_id").SetValue(c.AccountID)
+	section.Key("access_key_id").SetValue(c.AccessKeyID)
+	section.Key("secret_access_key").SetValue(c.SecretAccessKey)
+
+	// Sort config to maintain consistent ordering
+	sortedCfg := sortConfig(cfg)
+
+	// Atomic write: write to temp file first, then rename
+	tempFile := R2ConfigFile + ".tmp"
+	err = sortedCfg.SaveTo(tempFile)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Failed to save config file: %v", err)
 	}
+
+	// Set secure permissions on temp file before rename
+	if err := os.Chmod(tempFile, 0600); err != nil {
+		os.Remove(tempFile) // Clean up temp file
+		log.Fatalf("Failed to set permissions on config file: %v", err)
+	}
+
+	// Atomic rename (overwrites existing file on most filesystems)
+	if err := os.Rename(tempFile, R2ConfigFile); err != nil {
+		os.Remove(tempFile) // Clean up temp file
+		log.Fatalf("Failed to write config file: %v", err)
+	}
+
+	// Ensure final file has secure permissions
+	ensureSecurePermissions()
 }
 
 // configureCmd represents the configure command
