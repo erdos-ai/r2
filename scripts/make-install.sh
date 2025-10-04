@@ -20,7 +20,7 @@ cat > install.sh << 'EOF'
 #!/bin/sh
 set -e  # Exit on error
 
-OS=$(uname -s)
+OS=$(uname -s | tr '[:upper:]' '[:lower:]')
 ARCH=$(uname -m)
 
 # Normalize architecture names to match GoReleaser output
