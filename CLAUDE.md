@@ -33,9 +33,27 @@ go run main.go [command] [flags]
 ```
 
 ### Release Process
-The project uses GoReleaser for building releases. Tags trigger the release workflow:
+The project uses release-please for automated versioning and GoReleaser for building releases.
+
+**Automated Process:**
+1. Push commits to main using Conventional Commits format:
+   - `feat:` for new features (minor version bump)
+   - `fix:` for bug fixes (patch version bump)
+   - `feat!:` or `BREAKING CHANGE:` for breaking changes (major version bump)
+2. release-please automatically creates/updates a Release PR
+3. Review and merge the Release PR
+4. release-please creates a tag, triggering GoReleaser to build and publish
+
+**Conventional Commit Examples:**
 ```bash
-# Create a new release (triggers GitHub Actions)
+git commit -m "feat: add bucket encryption support"
+git commit -m "fix: resolve timeout issue in sync command"
+git commit -m "feat!: change configuration file format"
+```
+
+**Manual release (not recommended):**
+```bash
+# Only use if automated process fails
 git tag v0.1.0
 git push origin v0.1.0
 ```
