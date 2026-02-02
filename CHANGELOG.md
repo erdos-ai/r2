@@ -2,6 +2,18 @@
 
 This changelog goes through all the changes that have been made in each release.
 
+## [0.3.0](https://github.com/erdos-ai/r2/compare/v0.2.1...v0.3.0) (2026-02-02)
+
+
+### Features
+
+* add --include-from and --config flags for sync command ([288c6b8](https://github.com/erdos-ai/r2/commit/288c6b875ed4bce0661a28e21db2bbde391c62d8)), closes [#17](https://github.com/erdos-ai/r2/issues/17)
+
+
+### Bug Fixes
+
+* handle uppercase uname output ([766f168](https://github.com/erdos-ai/r2/commit/766f168b8c8e5dae8786525194785c588f228ab6))
+
 ## v0.1.3-alpha
 
 - FIXED
