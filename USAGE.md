@@ -25,6 +25,7 @@ r2 [command] [flags]
 ### Global Flags
 
 - `-p, --profile` — R2 profile to use (default "default")
+- `--config` — Path to R2 config file (default "~/.r2")
 - `-h, --help` — Help for any command
 
 ### Help
@@ -34,6 +35,35 @@ Help for any command can be obtained by running `r2 help [command]`. For example
 ```bash
 # Help for the configure command
 r2 help configure
+```
+
+### Sync Command
+
+The `sync` command copies changed files between a local directory and an R2 prefix.
+
+#### Flags
+
+- `--include-from` — Read include patterns from a file (patterns are relative to the sync source root)
+
+#### Include File Format
+
+Lines are glob patterns. `#` begins a comment. `**` matches across directories. A trailing `/`
+means "include everything under this directory".
+
+Patterns are relative to the sync source root. For example, use `db-dump/` not `/d/db-dump/`.
+
+Example `patterns.txt`:
+
+```text
+# Only include db dumps and SQL files
+db-dump/
+**/*.sql
+```
+
+Example usage:
+
+```bash
+r2 sync --include-from patterns.txt /d/ r2://backup/2026-02-02/
 ```
 
 ### Pipe Command
