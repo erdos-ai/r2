@@ -7,7 +7,6 @@ This changelog goes through all the changes that have been made in each release.
 
 ### Features
 
-* add --include-from and --config flags for sync command ([b43da17](https://github.com/erdos-ai/r2/commit/b43da17c0e0f709baafd2246d848df9277e11314))
 * add --include-from and --config flags for sync command ([288c6b8](https://github.com/erdos-ai/r2/commit/288c6b875ed4bce0661a28e21db2bbde391c62d8)), closes [#17](https://github.com/erdos-ai/r2/issues/17)
 
 
