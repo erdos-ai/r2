@@ -43,6 +43,15 @@ func Execute() {
 func init() {
 	// Enable profile flag for all commands
 	rootCmd.PersistentFlags().StringP("profile", "p", "default", "R2 profile to use")
+	rootCmd.PersistentFlags().String("config", "", "Path to R2 config file (default \"~/.r2\")")
+
+	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+		configPath, err := cmd.Root().PersistentFlags().GetString("config")
+		if err != nil {
+			return err
+		}
+		return applyConfigFlag(configPath)
+	}
 
 	// Add version flag
 	rootCmd.Flags().BoolP("version", "v", false, "Print version information and quit")

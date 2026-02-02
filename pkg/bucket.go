@@ -285,7 +285,7 @@ func (b *R2Bucket) SyncLocalToR2(sourcePath string) {
 // SyncLocalToR2WithPrefix syncs a local directory to an R2 bucket with a specific prefix.
 // The sourcePath argument takes the path to the local directory to sync.
 // The prefix argument specifies the prefix to add to all uploaded objects.
-func (b *R2Bucket) SyncLocalToR2WithPrefix(sourcePath string, prefix string) {
+func (b *R2Bucket) SyncLocalToR2WithPrefix(sourcePath string, prefix string, filters ...func(string) bool) {
 	// Check if source path exists and is a directory
 	if !isDir(sourcePath) {
 		log.Fatal("Source path must be a directory.")
@@ -295,6 +295,8 @@ func (b *R2Bucket) SyncLocalToR2WithPrefix(sourcePath string, prefix string) {
 	if prefix != "" && !strings.HasSuffix(prefix, "/") {
 		prefix = prefix + "/"
 	}
+
+	filter := firstFilter(filters...)
 
 	// Get extant paths and their MD5 checksums in bucket with the specified prefix
 	bucketObjects := make(map[string]string)
@@ -313,6 +315,10 @@ func (b *R2Bucket) SyncLocalToR2WithPrefix(sourcePath string, prefix string) {
 			// Get relative path from source directory
 			relativePath := strings.TrimPrefix(path, sourcePath)
 			relativePath = strings.TrimPrefix(relativePath, "/")
+
+			if filter != nil && !filter(relativePath) {
+				return nil
+			}
 
 			// Add prefix to create final bucket path
 			bucketPath := prefix + relativePath
@@ -341,11 +347,13 @@ func (b *R2Bucket) SyncR2ToLocal(destinationPath string) {
 // SyncR2ToLocalWithPrefix syncs objects from an R2 bucket with a specific prefix to a local directory.
 // The destinationPath argument takes the path to the local directory to sync.
 // The prefix argument specifies which objects to sync (only objects with this prefix).
-func (b *R2Bucket) SyncR2ToLocalWithPrefix(destinationPath string, prefix string) {
+func (b *R2Bucket) SyncR2ToLocalWithPrefix(destinationPath string, prefix string, filters ...func(string) bool) {
 	// Check if destination path exists and is a directory
 	if !isDir(destinationPath) {
 		log.Fatal("Destination path must be a directory.")
 	}
+
+	filter := firstFilter(filters...)
 
 	// Iterate through objects with the specified prefix and download necessary ones
 	for _, object := range b.GetObjectsWithPrefix(prefix) {
@@ -358,6 +366,10 @@ func (b *R2Bucket) SyncR2ToLocalWithPrefix(destinationPath string, prefix string
 			relativePath = strings.TrimPrefix(objectPath, prefix)
 			// Also remove leading slash if present
 			relativePath = strings.TrimPrefix(relativePath, "/")
+		}
+
+		if filter != nil && !filter(relativePath) {
+			continue
 		}
 
 		// Construct local file path
@@ -397,7 +409,7 @@ func (b *R2Bucket) SyncR2ToR2(destBucket R2Bucket) {
 // SyncR2ToR2WithPrefix syncs objects from an R2 bucket with a specific prefix to another R2 bucket.
 // The sourcePrefix specifies which objects to sync from the source bucket.
 // The destPrefix specifies the prefix to add to objects in the destination bucket.
-func (b *R2Bucket) SyncR2ToR2WithPrefix(destBucket R2Bucket, sourcePrefix string, destPrefix string) {
+func (b *R2Bucket) SyncR2ToR2WithPrefix(destBucket R2Bucket, sourcePrefix string, destPrefix string, filters ...func(string) bool) {
 	// Ensure prefixes end with / if they're not empty
 	if sourcePrefix != "" && !strings.HasSuffix(sourcePrefix, "/") {
 		sourcePrefix = sourcePrefix + "/"
@@ -405,6 +417,8 @@ func (b *R2Bucket) SyncR2ToR2WithPrefix(destBucket R2Bucket, sourcePrefix string
 	if destPrefix != "" && !strings.HasSuffix(destPrefix, "/") {
 		destPrefix = destPrefix + "/"
 	}
+
+	filter := firstFilter(filters...)
 
 	// Get extant paths and their MD5 checksums in source bucket with prefix
 	sourceBucketObjects := make(map[string]string)
@@ -425,6 +439,11 @@ func (b *R2Bucket) SyncR2ToR2WithPrefix(destBucket R2Bucket, sourcePrefix string
 		if sourcePrefix != "" {
 			relativePath = strings.TrimPrefix(sourcePath, sourcePrefix)
 		}
+
+		if filter != nil && !filter(relativePath) {
+			continue
+		}
+
 		destPath := destPrefix + relativePath
 
 		destHash, sourceObjectInDestBucket := destBucketObjects[destPath]
@@ -432,6 +451,15 @@ func (b *R2Bucket) SyncR2ToR2WithPrefix(destBucket R2Bucket, sourcePrefix string
 			b.Copy(sourcePath, R2URI{Bucket: destBucket.Name, Path: destPath})
 		}
 	}
+}
+
+func firstFilter(filters ...func(string) bool) func(string) bool {
+	for _, filter := range filters {
+		if filter != nil {
+			return filter
+		}
+	}
+	return nil
 }
 
 // GetURL returns a presigned URL for an object to get from a bucket. The uri argument takes the

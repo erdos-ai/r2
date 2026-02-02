@@ -14,6 +14,18 @@ var syncCmd = &cobra.Command{
 	Short: "Syncs directories and R2 prefixes.",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
+		includePath, err := cmd.Flags().GetString("include-from")
+		if err != nil {
+			log.Fatal(err)
+		}
+		var includeFilter func(string) bool
+		if includePath != "" {
+			includeFilter, err = loadIncludeFilter(includePath)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+
 		// Get profile client
 		profileName, err := cmd.Flags().GetString("profile")
 		if err != nil {
@@ -29,19 +41,19 @@ var syncCmd = &cobra.Command{
 				// Sync local directory to R2 bucket
 				destURI := pkg.ParseR2URISafe(destinationPath)
 				b := c.Bucket(destURI.Bucket)
-				b.SyncLocalToR2WithPrefix(sourcePath, destURI.Path)
+				b.SyncLocalToR2WithPrefix(sourcePath, destURI.Path, includeFilter)
 			} else if pkg.IsR2URI(sourcePath) && !pkg.IsR2URI(destinationPath) {
 				// Sync R2 bucket to local directory
 				sourceURI := pkg.ParseR2URISafe(sourcePath)
 				b := c.Bucket(sourceURI.Bucket)
-				b.SyncR2ToLocalWithPrefix(destinationPath, sourceURI.Path)
+				b.SyncR2ToLocalWithPrefix(destinationPath, sourceURI.Path, includeFilter)
 			} else if pkg.IsR2URI(sourcePath) && pkg.IsR2URI(destinationPath) {
 				// Sync R2 bucket to R2 bucket
 				sourceURI := pkg.ParseR2URISafe(sourcePath)
 				destURI := pkg.ParseR2URISafe(destinationPath)
 				b := c.Bucket(sourceURI.Bucket)
 				destBucket := c.Bucket(destURI.Bucket)
-				b.SyncR2ToR2WithPrefix(destBucket, sourceURI.Path, destURI.Path)
+				b.SyncR2ToR2WithPrefix(destBucket, sourceURI.Path, destURI.Path, includeFilter)
 			} else if !pkg.IsR2URI(sourcePath) && !pkg.IsR2URI(destinationPath) {
 				// Both paths are local - not supported
 				log.Fatal("Local-to-local sync is not supported. At least one path must be an R2 URI (r2://bucket/path).")
@@ -55,4 +67,6 @@ var syncCmd = &cobra.Command{
 func init() {
 	// Add the sync command to the root command
 	rootCmd.AddCommand(syncCmd)
+
+	syncCmd.Flags().String("include-from", "", "Read include patterns from file (relative to source root)")
 }
