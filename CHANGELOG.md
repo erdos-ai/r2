@@ -2,6 +2,15 @@
 
 This changelog goes through all the changes that have been made in each release.
 
+## [0.3.1](https://github.com/erdos-ai/r2/compare/v0.3.0...v0.3.1) (2026-02-03)
+
+
+### Bug Fixes
+
+* add fetch-depth and tag fetch to install-script job ([313336d](https://github.com/erdos-ai/r2/commit/313336dfc97bcb7124dbe740aa63a6aa0e5a3889))
+* create PR instead of pushing directly to main in release workflow ([0695fcf](https://github.com/erdos-ai/r2/commit/0695fcf4c29b2c42bcced7dce104f7e58309530d))
+* create PR instead of pushing directly to main in release workflow ([d78ad05](https://github.com/erdos-ai/r2/commit/d78ad055f47b2a14da7c6d0807aea4baf038019c))
+
 ## [0.3.0](https://github.com/erdos-ai/r2/compare/v0.2.1...v0.3.0) (2026-02-02)
 
 
