@@ -73,7 +73,7 @@ git push origin v0.1.0
 ### Key Dependencies
 - `github.com/spf13/cobra`: CLI framework
 - `github.com/aws/aws-sdk-go-v2`: AWS SDK for S3-compatible operations
-- Go 1.19+ required
+- Go 1.24+ required
 
 ### Command Pattern
 All CLI commands follow the same pattern:
