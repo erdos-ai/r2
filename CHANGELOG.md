@@ -2,6 +2,14 @@
 
 This changelog goes through all the changes that have been made in each release.
 
+## [0.3.3](https://github.com/erdos-ai/r2/compare/v0.3.2...v0.3.3) (2026-04-13)
+
+
+### Dependencies
+
+* **deps:** bump github.com/aws/aws-sdk-go-v2/feature/s3/manager ([#39](https://github.com/erdos-ai/r2/issues/39)) ([fa258b5](https://github.com/erdos-ai/r2/commit/fa258b5161575818da9beb6349a0636f587240a1))
+* **deps:** bump github.com/spf13/cobra from 1.9.1 to 1.10.2 ([#38](https://github.com/erdos-ai/r2/issues/38)) ([8d01a7d](https://github.com/erdos-ai/r2/commit/8d01a7d7c54f8f0a8100c00a005d30f9bec40ea6))
+
 ## [0.3.2](https://github.com/erdos-ai/r2/compare/v0.3.1...v0.3.2) (2026-04-13)
 
 
