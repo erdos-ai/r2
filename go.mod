@@ -5,7 +5,7 @@ go 1.24
 require (
 	github.com/aws/aws-sdk-go-v2/config v1.32.14
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.14
-	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.19.0
+	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.22.13
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.99.0
 	github.com/bmatcuk/doublestar/v4 v4.10.0
 	github.com/spf13/cobra v1.9.1
