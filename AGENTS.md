@@ -1,6 +1,6 @@
 # Repository Guidelines
 
-This repository hosts `r2`, a Go (1.22) CLI and library for Cloudflare R2 built on Cobra and the AWS S3 SDK. Use this guide to contribute changes consistently and safely.
+This repository hosts `r2`, a Go (1.24) CLI and library for Cloudflare R2 built on Cobra and the AWS S3 SDK. Use this guide to contribute changes consistently and safely.
 
 ## Project Structure & Module Organization
 - `cmd/`: Cobra commands (one file per subcommand, e.g. `cp.go`, `ls.go`, `sync.go`; root in `root.go`).
