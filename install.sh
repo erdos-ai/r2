@@ -20,7 +20,7 @@ case "$OS" in
 esac
 
 BINARY_NAME="r2"
-TAG_NAME="v0.3.1"
+TAG_NAME="v0.3.2"
 REPO_USER="erdos-ai"
 REPO_NAME="r2"
 
