@@ -2,6 +2,13 @@
 
 This changelog goes through all the changes that have been made in each release.
 
+## [0.3.2](https://github.com/erdos-ai/r2/compare/v0.3.1...v0.3.2) (2026-04-13)
+
+
+### Bug Fixes
+
+* **dependabot:** use 'deps' prefix so updates surface in release-please changelog ([e733cfc](https://github.com/erdos-ai/r2/commit/e733cfc501974d627e2ab7be05c014cc69e0255d))
+
 ## [0.3.1](https://github.com/erdos-ai/r2/compare/v0.3.0...v0.3.1) (2026-02-03)
 
 
