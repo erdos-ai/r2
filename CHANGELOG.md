@@ -2,6 +2,14 @@
 
 This changelog goes through all the changes that have been made in each release.
 
+## [0.3.4](https://github.com/erdos-ai/r2/compare/v0.3.3...v0.3.4) (2026-04-20)
+
+
+### Dependencies
+
+* **deps:** bump github.com/aws/aws-sdk-go-v2/credentials ([#42](https://github.com/erdos-ai/r2/issues/42)) ([3f02564](https://github.com/erdos-ai/r2/commit/3f02564371149159a234fef3f40b8e973897bbbb))
+* **deps:** bump github.com/aws/aws-sdk-go-v2/feature/s3/manager ([#43](https://github.com/erdos-ai/r2/issues/43)) ([0f392dc](https://github.com/erdos-ai/r2/commit/0f392dc5104481be09de44c781fe7188b76ce5b1))
+
 ## [0.3.3](https://github.com/erdos-ai/r2/compare/v0.3.2...v0.3.3) (2026-04-13)
 
 
