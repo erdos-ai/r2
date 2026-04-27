@@ -1,0 +1,37 @@
+name: Socket Security
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  socket:
+    name: Socket Tier 1 Reachability
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.x"
+
+      - name: Install Socket CLI
+        run: python -m pip install socketsecurity
+
+      - name: Run Socket scan
+        env:
+          SOCKET_SECURITY_API_KEY: ${{ secrets.SOCKET_SECURITY_API_KEY }}
+          PR_NUMBER: ${{ github.event.pull_request.number || 0 }}
+        run: |
+          socketcli \
+            --target-path "$GITHUB_WORKSPACE" \
+            --scm github \
+            --pr-number "$PR_NUMBER"
