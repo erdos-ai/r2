@@ -9,7 +9,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.100.1
 	github.com/bmatcuk/doublestar/v4 v4.10.0
 	github.com/spf13/cobra v1.10.2
-	gopkg.in/ini.v1 v1.67.1
+	gopkg.in/ini.v1 v1.67.2
 )
 
 require (
