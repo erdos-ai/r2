@@ -5,8 +5,8 @@ go 1.24
 require (
 	github.com/aws/aws-sdk-go-v2/config v1.32.17
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.16
-	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.22.17
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.100.1
+	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.22.18
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.101.0
 	github.com/bmatcuk/doublestar/v4 v4.10.0
 	github.com/spf13/cobra v1.10.2
 	gopkg.in/ini.v1 v1.67.2
