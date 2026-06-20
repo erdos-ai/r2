@@ -256,3 +256,18 @@ func TestCombineFilters_Interaction(t *testing.T) {
 		}
 	})
 }
+
+func TestCompileMatcher_StarStaysInSegment(t *testing.T) {
+	// A single "*" must not cross directory boundaries: "data/*.json" matches a
+	// file directly under data/ but not one nested deeper. Patterns and paths are
+	// slash-normalized, so the matcher uses doublestar.Match (always slash-aware)
+	// rather than PathMatch (OS-separator-aware) to keep this consistent on every
+	// platform, including Windows.
+	matcher := compileMatcher([]string{"data/*.json"})
+	if !matcher(filepath.Join("data", "a.json")) {
+		t.Error("expected data/a.json to match data/*.json")
+	}
+	if matcher(filepath.Join("data", "nested", "b.json")) {
+		t.Error("expected data/nested/b.json NOT to match data/*.json")
+	}
+}

@@ -131,7 +131,7 @@ func normalizePattern(raw, kind string) (string, error) {
 		normalized = strings.TrimSuffix(normalized, "/") + "/**"
 	}
 
-	if _, err := doublestar.PathMatch(normalized, ""); err != nil {
+	if _, err := doublestar.Match(normalized, ""); err != nil {
 		return "", fmt.Errorf("invalid %s pattern %q: %w", kind, raw, err)
 	}
 	return normalized, nil
@@ -148,7 +148,7 @@ func compileMatcher(patterns []string) func(string) bool {
 		normalized = strings.TrimPrefix(normalized, "./")
 		normalized = strings.TrimPrefix(normalized, "/")
 		for _, pattern := range patterns {
-			matched, err := doublestar.PathMatch(pattern, normalized)
+			matched, err := doublestar.Match(pattern, normalized)
 			if err != nil {
 				continue
 			}

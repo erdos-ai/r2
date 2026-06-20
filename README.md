@@ -75,7 +75,7 @@ r2 help <command>
 r2 sync --include-from patterns.txt /d/ r2://backup/2026-02-02/
 
 # Exclude files matching a glob pattern (repeatable)
-r2 sync --exclude 'node_modules/**' --exclude '*.tmp' /d/ r2://backup/2026-02-02/
+r2 sync --exclude 'node_modules/**' --exclude '**/*.tmp' /d/ r2://backup/2026-02-02/
 
 # Read exclude patterns from a file
 r2 sync --exclude-from .syncignore /d/ r2://backup/2026-02-02/

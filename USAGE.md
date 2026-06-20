@@ -79,7 +79,7 @@ Example usage:
 r2 sync --include-from patterns.txt /d/ r2://backup/2026-02-02/
 
 # Exclude build artifacts and secrets, both inline and from a file
-r2 sync --exclude 'node_modules/**' --exclude '*.tmp' --exclude-from .syncignore /d/ r2://backup/2026-02-02/
+r2 sync --exclude 'node_modules/**' --exclude '**/*.tmp' --exclude-from .syncignore /d/ r2://backup/2026-02-02/
 ```
 
 ### Pipe Command
