@@ -26,6 +26,21 @@ var syncCmd = &cobra.Command{
 			}
 		}
 
+		excludePath, err := cmd.Flags().GetString("exclude-from")
+		if err != nil {
+			log.Fatal(err)
+		}
+		excludePatterns, err := cmd.Flags().GetStringArray("exclude")
+		if err != nil {
+			log.Fatal(err)
+		}
+		excludeFilter, err := loadExcludeFilter(excludePath, excludePatterns)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		filter := combineFilters(includeFilter, excludeFilter)
+
 		// Get profile client
 		profileName, err := cmd.Flags().GetString("profile")
 		if err != nil {
@@ -41,19 +56,19 @@ var syncCmd = &cobra.Command{
 				// Sync local directory to R2 bucket
 				destURI := pkg.ParseR2URISafe(destinationPath)
 				b := c.Bucket(destURI.Bucket)
-				b.SyncLocalToR2WithPrefix(sourcePath, destURI.Path, includeFilter)
+				b.SyncLocalToR2WithPrefix(sourcePath, destURI.Path, filter)
 			} else if pkg.IsR2URI(sourcePath) && !pkg.IsR2URI(destinationPath) {
 				// Sync R2 bucket to local directory
 				sourceURI := pkg.ParseR2URISafe(sourcePath)
 				b := c.Bucket(sourceURI.Bucket)
-				b.SyncR2ToLocalWithPrefix(destinationPath, sourceURI.Path, includeFilter)
+				b.SyncR2ToLocalWithPrefix(destinationPath, sourceURI.Path, filter)
 			} else if pkg.IsR2URI(sourcePath) && pkg.IsR2URI(destinationPath) {
 				// Sync R2 bucket to R2 bucket
 				sourceURI := pkg.ParseR2URISafe(sourcePath)
 				destURI := pkg.ParseR2URISafe(destinationPath)
 				b := c.Bucket(sourceURI.Bucket)
 				destBucket := c.Bucket(destURI.Bucket)
-				b.SyncR2ToR2WithPrefix(destBucket, sourceURI.Path, destURI.Path, includeFilter)
+				b.SyncR2ToR2WithPrefix(destBucket, sourceURI.Path, destURI.Path, filter)
 			} else if !pkg.IsR2URI(sourcePath) && !pkg.IsR2URI(destinationPath) {
 				// Both paths are local - not supported
 				log.Fatal("Local-to-local sync is not supported. At least one path must be an R2 URI (r2://bucket/path).")
@@ -69,4 +84,6 @@ func init() {
 	rootCmd.AddCommand(syncCmd)
 
 	syncCmd.Flags().String("include-from", "", "Read include patterns from file (relative to source root)")
+	syncCmd.Flags().String("exclude-from", "", "Read exclude patterns from file (relative to source root)")
+	syncCmd.Flags().StringArray("exclude", nil, "Exclude files matching this glob pattern (repeatable)")
 }
