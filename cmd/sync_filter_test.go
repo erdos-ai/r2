@@ -286,9 +286,10 @@ func TestStripComment(t *testing.T) {
 		{"*.sql # database dumps", "*.sql", true},
 		{".env\t# secrets", ".env", true},
 		{"logs/ # rotated", "logs/", true},
-		{"build#1/", "build#1/", true},                  // '#' with no preceding space stays literal
-		{"a#b # comment", "a#b", true},                  // literal '#', then an inline comment
-		{`report \#1.csv # Q1`, `report \#1.csv`, true}, // escaped '#' kept, real comment stripped
+		{"build#1/", "build#1/", true},                 // '#' with no preceding space stays literal
+		{"a#b # comment", "a#b", true},                 // literal '#', then an inline comment
+		{`report \#1.csv # Q1`, `report #1.csv`, true}, // escaped '#' -> literal '#', comment stripped
+		{`\#notes.md`, `#notes.md`, true},              // escaped leading '#' (name that starts with '#')
 	}
 	for _, tc := range testCases {
 		got, ok := stripComment(tc.line)
@@ -327,5 +328,30 @@ func TestLoadExcludeFilter_InlineComments(t *testing.T) {
 	}
 	if filter("keep.txt") {
 		t.Error("did not expect keep.txt to be excluded")
+	}
+}
+
+func TestLoadExcludeFilter_EscapedHash(t *testing.T) {
+	tempDir := t.TempDir()
+	excludePath := filepath.Join(tempDir, "exclude.txt")
+	// "\#cache" must match a root file literally named "#cache" rather than being
+	// rejected as an absolute pattern (the escaped '#' avoids comment handling and
+	// the backslash must not reach isAbsolutePattern).
+	if err := os.WriteFile(excludePath, []byte("\\#cache\n"), 0600); err != nil {
+		t.Fatalf("write exclude file: %v", err)
+	}
+
+	filter, err := loadExcludeFilter(excludePath, nil)
+	if err != nil {
+		t.Fatalf("load exclude filter: %v", err)
+	}
+	if filter == nil {
+		t.Fatal("expected non-nil exclude filter")
+	}
+	if !filter("#cache") {
+		t.Error("expected #cache to be excluded")
+	}
+	if filter("cache") {
+		t.Error("did not expect cache to be excluded")
 	}
 }

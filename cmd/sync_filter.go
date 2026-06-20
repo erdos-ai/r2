@@ -106,8 +106,9 @@ func readPatternLines(path string) ([]string, error) {
 // glob pattern, reporting false when nothing usable remains. A line whose first
 // non-whitespace character is "#" is a full-line comment. Otherwise an unescaped
 // "#" that follows whitespace starts an inline comment and is dropped along with
-// the rest of the line; a "#" with no preceding space, or one escaped as "\#",
-// is kept as part of the pattern (the backslash is left intact for doublestar).
+// the rest of the line. A "#" with no preceding space stays literal, and "\#"
+// escapes a literal "#" anywhere — including the start of a name — emitting a bare
+// "#" so the backslash never reaches the matcher (a leading "\" looks absolute).
 func stripComment(line string) (string, bool) {
 	trimmed := strings.TrimSpace(line)
 	if trimmed == "" || strings.HasPrefix(trimmed, "#") {
@@ -115,20 +116,17 @@ func stripComment(line string) (string, bool) {
 	}
 
 	var b strings.Builder
-	escaped := false
 	prevSpace := false
 	for i := 0; i < len(trimmed); i++ {
 		c := trimmed[i]
 		switch {
-		case escaped:
-			b.WriteByte(c)
-			escaped = false
-			prevSpace = false
-		case c == '\\':
-			b.WriteByte(c)
-			escaped = true
+		case c == '\\' && i+1 < len(trimmed) && trimmed[i+1] == '#':
+			// Escaped "#": emit a literal '#' and drop the backslash.
+			b.WriteByte('#')
+			i++
 			prevSpace = false
 		case c == '#' && prevSpace:
+			// Unescaped '#' after whitespace begins an inline comment.
 			pattern := strings.TrimRight(b.String(), " \t")
 			return pattern, pattern != ""
 		default:
