@@ -123,7 +123,7 @@ echo "data" | r2 pipe r2://bucket/file.txt --quiet
 The `r2` library can be used to interact with R2 from within your Go application. All library code
 exists in the [pkg](pkg) directory and is well documented.
 
-Documentation may be found [here](https://pkg.go.dev/github.com/erdos-one/r2/pkg).
+Documentation may be found [here](https://pkg.go.dev/github.com/erdos-ai/r2/pkg).
 
 ### Example
 
@@ -133,7 +133,7 @@ Uploading a file to a bucket:
 package main
 
 import (
-  r2 "github.com/erdos-one/r2/pkg"
+  r2 "github.com/erdos-ai/r2/pkg"
 )
 
 func main() {

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/erdos-one/r2/pkg"
+	"github.com/erdos-ai/r2/pkg"
 )
 
 func TestGetConfig_EmptyFile(t *testing.T) {

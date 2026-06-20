@@ -14,7 +14,7 @@ R2 is a CLI and Go library for working with Cloudflare's R2 Storage service. It 
 go build -o r2 main.go
 
 # Build with version information
-go build -ldflags "-s -w -X github.com/erdos-one/r2/cmd.version=v1.0.0" -o r2 main.go
+go build -ldflags "-s -w -X github.com/erdos-ai/r2/cmd.version=v1.0.0" -o r2 main.go
 ```
 
 ### Installing Dependencies

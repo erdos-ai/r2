@@ -1,4 +1,4 @@
-module github.com/erdos-one/r2
+module github.com/erdos-ai/r2
 
 go 1.24
 
