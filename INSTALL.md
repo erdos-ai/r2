@@ -6,7 +6,7 @@ The zero-dependency CLI is available for Linux and macOS and can be installed wi
 command:
 
 ```bash
-sh <(curl https://install.erdos.one/r2)
+sh <(curl -fsSL https://raw.githubusercontent.com/erdos-ai/r2/main/install.sh)
 ```
 
 ## Library
@@ -14,5 +14,5 @@ sh <(curl https://install.erdos.one/r2)
 The library is available as a Go module and can be installed with the following command:
 
 ```bash
-go get github.com/erdos-one/r2/pkg
+go get github.com/erdos-ai/r2/pkg
 ```

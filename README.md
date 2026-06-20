@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://github.com/erdos-one/r2">
+  <a href="https://github.com/erdos-ai/r2">
     <img alt="R2 CLI" src="assets/bucket.svg" width="150"/>
   </a>
 </p>
@@ -9,8 +9,8 @@
 </h1>
 
 <p align="center">
-  <a href="https://github.com/erdos-one/r2/releases/latest" title="GitHub release">
-    <img src="https://img.shields.io/github/release/erdos-one/r2.svg">
+  <a href="https://github.com/erdos-ai/r2/releases/latest" title="GitHub release">
+    <img src="https://img.shields.io/github/release/erdos-ai/r2.svg">
   </a>
   <a href="https://opensource.org/licenses/Apache-2.0" title="License: Apache-2.0">
     <img src="https://img.shields.io/badge/License-Apache%202-blue.svg">
@@ -35,7 +35,7 @@ gap.
 To install the `r2` CLI, simply run the following command:
 
 ```bash
-go install github.com/erdos-one/r2@latest
+go install github.com/erdos-ai/r2@latest
 ```
 
 For more installation options, see [INSTALL.md](INSTALL.md).
@@ -97,7 +97,7 @@ For more usage information — including library usage — see [USAGE.md](USAGE.
 ## Progress
 
 We're working to implement all the functionality of the AWS CLI's s3 subcommand. As of
-[v0.1.0-alpha](https://github.com/erdos-one/r2/tree/v0.1.0-alpha), we have all the commands
+[v0.1.0-alpha](https://github.com/erdos-ai/r2/tree/v0.1.0-alpha), we have all the commands
 implemented, but not all the options. We're working on it, but if you'd like to lend a helping hand,
 we'd much appreciate your help!
 

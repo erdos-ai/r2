@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/erdos-one/r2/pkg"
+	"github.com/erdos-ai/r2/pkg"
 
 	"github.com/spf13/cobra"
 )

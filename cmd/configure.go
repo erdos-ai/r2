@@ -9,7 +9,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/erdos-one/r2/pkg"
+	"github.com/erdos-ai/r2/pkg"
 
 	"github.com/spf13/cobra"
 	"gopkg.in/ini.v1"
