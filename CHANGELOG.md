@@ -2,6 +2,13 @@
 
 This changelog goes through all the changes that have been made in each release.
 
+## [0.4.0](https://github.com/erdos-ai/r2/compare/v0.3.4...v0.4.0) (2026-06-20)
+
+
+### Features
+
+* **sync:** add --exclude and --exclude-from filters ([#72](https://github.com/erdos-ai/r2/issues/72)) ([5096d13](https://github.com/erdos-ai/r2/commit/5096d1369c25c124d35e25732e1fbcc6a1d0c1c5))
+
 ## [0.3.4](https://github.com/erdos-ai/r2/compare/v0.3.3...v0.3.4) (2026-04-20)
 
 
