@@ -271,3 +271,61 @@ func TestCompileMatcher_StarStaysInSegment(t *testing.T) {
 		t.Error("expected data/nested/b.json NOT to match data/*.json")
 	}
 }
+
+func TestStripComment(t *testing.T) {
+	testCases := []struct {
+		line string
+		want string
+		ok   bool
+	}{
+		{"*.sql", "*.sql", true},
+		{"", "", false},
+		{"   ", "", false},
+		{"# full-line comment", "", false},
+		{"   # indented full-line comment", "", false},
+		{"*.sql # database dumps", "*.sql", true},
+		{".env\t# secrets", ".env", true},
+		{"logs/ # rotated", "logs/", true},
+		{"build#1/", "build#1/", true},                  // '#' with no preceding space stays literal
+		{"a#b # comment", "a#b", true},                  // literal '#', then an inline comment
+		{`report \#1.csv # Q1`, `report \#1.csv`, true}, // escaped '#' kept, real comment stripped
+	}
+	for _, tc := range testCases {
+		got, ok := stripComment(tc.line)
+		if got != tc.want || ok != tc.ok {
+			t.Errorf("stripComment(%q) = (%q, %v), want (%q, %v)", tc.line, got, ok, tc.want, tc.ok)
+		}
+	}
+}
+
+func TestLoadExcludeFilter_InlineComments(t *testing.T) {
+	tempDir := t.TempDir()
+	excludePath := filepath.Join(tempDir, "exclude.txt")
+	content := strings.Join([]string{
+		"*.tmp   # scratch files",
+		".env # local secrets",
+		"",
+	}, "\n")
+	if err := os.WriteFile(excludePath, []byte(content), 0600); err != nil {
+		t.Fatalf("write exclude file: %v", err)
+	}
+
+	filter, err := loadExcludeFilter(excludePath, nil)
+	if err != nil {
+		t.Fatalf("load exclude filter: %v", err)
+	}
+	if filter == nil {
+		t.Fatal("expected non-nil exclude filter")
+	}
+
+	// Inline comments must be stripped so the glob actually matches.
+	if !filter("scratch.tmp") {
+		t.Error("expected scratch.tmp to be excluded")
+	}
+	if !filter(".env") {
+		t.Error("expected .env to be excluded")
+	}
+	if filter("keep.txt") {
+		t.Error("did not expect keep.txt to be excluded")
+	}
+}

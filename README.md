@@ -89,7 +89,7 @@ Example `patterns.txt`:
 ```text
 # Only include db dumps
 db-dump/
-**/*.sql
+**/*.sql   # all SQL files, at any depth
 ```
 
 For more usage information — including library usage — see [USAGE.md](USAGE.md).

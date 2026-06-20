@@ -77,8 +77,9 @@ func combineFilters(include, exclude func(string) bool) func(string) bool {
 	}
 }
 
-// readPatternLines opens a pattern file and returns its meaningful lines: each is
-// trimmed of surrounding whitespace, with blank lines and "#" comments removed.
+// readPatternLines opens a pattern file and returns its meaningful glob patterns:
+// blank lines and comments are dropped, inline comments are stripped, and each
+// returned pattern is trimmed of surrounding whitespace.
 func readPatternLines(path string) ([]string, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -89,16 +90,54 @@ func readPatternLines(path string) ([]string, error) {
 	var lines []string
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		raw := strings.TrimSpace(scanner.Text())
-		if raw == "" || strings.HasPrefix(raw, "#") {
+		pattern, ok := stripComment(scanner.Text())
+		if !ok {
 			continue
 		}
-		lines = append(lines, raw)
+		lines = append(lines, pattern)
 	}
 	if err := scanner.Err(); err != nil {
 		return nil, fmt.Errorf("failed to read pattern file %q: %w", path, err)
 	}
 	return lines, nil
+}
+
+// stripComment removes comments from a pattern-file line and returns the remaining
+// glob pattern, reporting false when nothing usable remains. A line whose first
+// non-whitespace character is "#" is a full-line comment. Otherwise an unescaped
+// "#" that follows whitespace starts an inline comment and is dropped along with
+// the rest of the line; a "#" with no preceding space, or one escaped as "\#",
+// is kept as part of the pattern (the backslash is left intact for doublestar).
+func stripComment(line string) (string, bool) {
+	trimmed := strings.TrimSpace(line)
+	if trimmed == "" || strings.HasPrefix(trimmed, "#") {
+		return "", false
+	}
+
+	var b strings.Builder
+	escaped := false
+	prevSpace := false
+	for i := 0; i < len(trimmed); i++ {
+		c := trimmed[i]
+		switch {
+		case escaped:
+			b.WriteByte(c)
+			escaped = false
+			prevSpace = false
+		case c == '\\':
+			b.WriteByte(c)
+			escaped = true
+			prevSpace = false
+		case c == '#' && prevSpace:
+			pattern := strings.TrimRight(b.String(), " \t")
+			return pattern, pattern != ""
+		default:
+			b.WriteByte(c)
+			prevSpace = c == ' ' || c == '\t'
+		}
+	}
+	pattern := strings.TrimRight(b.String(), " \t")
+	return pattern, pattern != ""
 }
 
 // normalizePatterns normalizes and validates each raw pattern, returning the first

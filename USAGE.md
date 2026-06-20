@@ -49,9 +49,10 @@ The `sync` command copies changed files between a local directory and an R2 pref
 
 #### Pattern File Format
 
-The include and exclude files share one format. Lines are glob patterns. `#` begins a comment.
-`**` matches across directories (a bare `*` does not). A trailing `/` means "everything under
-this directory".
+The include and exclude files share one format. Lines are glob patterns. A `#` starts a comment,
+either on its own line or inline after whitespace (e.g. `*.sql # database dumps`); write `\#` to
+match a literal `#`. `**` matches across directories (a bare `*` does not). A trailing `/` means
+"everything under this directory".
 
 Patterns are relative to the sync source root. For example, use `db-dump/` not `/d/db-dump/`.
 
@@ -60,7 +61,7 @@ Example `patterns.txt`:
 ```text
 # Only include db dumps and SQL files
 db-dump/
-**/*.sql
+**/*.sql   # all SQL files, at any depth
 ```
 
 #### Filter Precedence
