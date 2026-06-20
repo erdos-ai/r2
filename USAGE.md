@@ -44,11 +44,14 @@ The `sync` command copies changed files between a local directory and an R2 pref
 #### Flags
 
 - `--include-from` — Read include patterns from a file (patterns are relative to the sync source root)
+- `--exclude-from` — Read exclude patterns from a file (same format as `--include-from`)
+- `--exclude` — Exclude files matching a glob pattern; may be repeated
 
-#### Include File Format
+#### Pattern File Format
 
-Lines are glob patterns. `#` begins a comment. `**` matches across directories. A trailing `/`
-means "include everything under this directory".
+The include and exclude files share one format. Lines are glob patterns. `#` begins a comment.
+`**` matches across directories (a bare `*` does not). A trailing `/` means "everything under
+this directory".
 
 Patterns are relative to the sync source root. For example, use `db-dump/` not `/d/db-dump/`.
 
@@ -60,10 +63,23 @@ db-dump/
 **/*.sql
 ```
 
+#### Filter Precedence
+
+A file is synced only if it matches the include filter (when one is given) **and** does not
+match the exclude filter (when one is given). Exclude wins on conflict. With no include flag,
+everything is included; with no exclude flag, nothing is excluded.
+
+An empty include file is an error (it would sync nothing), while an empty exclude file or an
+empty `--exclude` value is a harmless no-op.
+
 Example usage:
 
 ```bash
+# Include-only sync
 r2 sync --include-from patterns.txt /d/ r2://backup/2026-02-02/
+
+# Exclude build artifacts and secrets, both inline and from a file
+r2 sync --exclude 'node_modules/**' --exclude '*.tmp' --exclude-from .syncignore /d/ r2://backup/2026-02-02/
 ```
 
 ### Pipe Command
