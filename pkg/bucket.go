@@ -198,6 +198,7 @@ func (b *R2Bucket) PutStream(reader io.Reader, bucketPath string, partSize int64
 	uploader := transfermanager.New(&b.Client.Client, func(o *transfermanager.Options) {
 		if partSize > 0 {
 			o.PartSizeBytes = partSize
+			o.MultipartUploadThreshold = partSize
 		}
 		if concurrency > 0 {
 			o.Concurrency = concurrency
