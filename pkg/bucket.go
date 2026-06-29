@@ -3,7 +3,6 @@
 package pkg
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -13,10 +12,12 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
+	"github.com/aws/aws-sdk-go-v2/feature/s3/transfermanager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
+
+const minMultipartPartSize int64 = 1024 * 1024 * 5
 
 // R2Bucket represents a Cloudflare R2 bucket, storing the bucket's name and R2 client used to
 // access the bucket.
@@ -182,35 +183,24 @@ func (b *R2Bucket) Upload(localPath, bucketPath string) {
 // The partSize parameter controls the size of each part in bytes (minimum 5MB).
 // The concurrency parameter controls how many parts are uploaded in parallel.
 func (b *R2Bucket) PutStream(reader io.Reader, bucketPath string, partSize int64, concurrency int) error {
-	// For stdin and other non-seekable streams, we need to buffer the data first
-	// This allows us to use multipart upload with the seekable bytes.Reader
-	data, err := io.ReadAll(reader)
-	if err != nil {
-		return fmt.Errorf("failed to read stream: %w", err)
+	if partSize > 0 && partSize < minMultipartPartSize {
+		return fmt.Errorf("part size must be at least %d bytes", minMultipartPartSize)
 	}
 
-	// For small files (less than part size), use simple upload
-	if int64(len(data)) <= partSize {
-		return b.Put(bytes.NewReader(data), bucketPath)
-	}
-
-	// For larger files, use the S3 manager with multipart upload
-	// This provides parallel uploads and better performance
-	uploader := manager.NewUploader(&b.Client.Client, func(u *manager.Uploader) {
+	uploader := transfermanager.New(&b.Client.Client, func(o *transfermanager.Options) {
 		if partSize > 0 {
-			u.PartSize = partSize
+			o.PartSizeBytes = partSize
+			o.MultipartUploadThreshold = partSize
 		}
 		if concurrency > 0 {
-			u.Concurrency = concurrency
+			o.Concurrency = concurrency
 		}
 	})
 
-	// Upload using the manager with the seekable bytes.Reader
-	// This will automatically use multipart upload for large files
-	_, err = uploader.Upload(context.TODO(), &s3.PutObjectInput{
+	_, err := uploader.UploadObject(context.TODO(), &transfermanager.UploadObjectInput{
 		Bucket: aws.String(b.Name),
 		Key:    aws.String(bucketPath),
-		Body:   bytes.NewReader(data),
+		Body:   reader,
 	})
 
 	return err
