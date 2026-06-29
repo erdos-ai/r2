@@ -18,6 +18,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
+const minMultipartPartSize int64 = 1024 * 1024 * 5
+
 // R2Bucket represents a Cloudflare R2 bucket, storing the bucket's name and R2 client used to
 // access the bucket.
 type R2Bucket struct {
@@ -192,6 +194,9 @@ func (b *R2Bucket) PutStream(reader io.Reader, bucketPath string, partSize int64
 	// For small files (less than part size), use simple upload
 	if int64(len(data)) <= partSize {
 		return b.Put(bytes.NewReader(data), bucketPath)
+	}
+	if partSize > 0 && partSize < minMultipartPartSize {
+		return fmt.Errorf("part size must be at least %d bytes", minMultipartPartSize)
 	}
 
 	// For larger files, use the S3 transfer manager with multipart upload.
