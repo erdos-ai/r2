@@ -13,7 +13,7 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
+	"github.com/aws/aws-sdk-go-v2/feature/s3/transfermanager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
@@ -194,20 +194,18 @@ func (b *R2Bucket) PutStream(reader io.Reader, bucketPath string, partSize int64
 		return b.Put(bytes.NewReader(data), bucketPath)
 	}
 
-	// For larger files, use the S3 manager with multipart upload
-	// This provides parallel uploads and better performance
-	uploader := manager.NewUploader(&b.Client.Client, func(u *manager.Uploader) {
+	// For larger files, use the S3 transfer manager with multipart upload.
+	uploader := transfermanager.New(&b.Client.Client, func(o *transfermanager.Options) {
 		if partSize > 0 {
-			u.PartSize = partSize
+			o.PartSizeBytes = partSize
 		}
 		if concurrency > 0 {
-			u.Concurrency = concurrency
+			o.Concurrency = concurrency
 		}
 	})
 
-	// Upload using the manager with the seekable bytes.Reader
-	// This will automatically use multipart upload for large files
-	_, err = uploader.Upload(context.TODO(), &s3.PutObjectInput{
+	// Upload using the manager with the seekable bytes.Reader.
+	_, err = uploader.UploadObject(context.TODO(), &transfermanager.UploadObjectInput{
 		Bucket: aws.String(b.Name),
 		Key:    aws.String(bucketPath),
 		Body:   bytes.NewReader(data),
