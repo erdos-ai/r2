@@ -3,7 +3,6 @@
 package pkg
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -184,22 +183,10 @@ func (b *R2Bucket) Upload(localPath, bucketPath string) {
 // The partSize parameter controls the size of each part in bytes (minimum 5MB).
 // The concurrency parameter controls how many parts are uploaded in parallel.
 func (b *R2Bucket) PutStream(reader io.Reader, bucketPath string, partSize int64, concurrency int) error {
-	// For stdin and other non-seekable streams, we need to buffer the data first
-	// This allows us to use multipart upload with the seekable bytes.Reader
-	data, err := io.ReadAll(reader)
-	if err != nil {
-		return fmt.Errorf("failed to read stream: %w", err)
-	}
-
-	// For small files (less than part size), use simple upload
-	if int64(len(data)) <= partSize {
-		return b.Put(bytes.NewReader(data), bucketPath)
-	}
 	if partSize > 0 && partSize < minMultipartPartSize {
 		return fmt.Errorf("part size must be at least %d bytes", minMultipartPartSize)
 	}
 
-	// For larger files, use the S3 transfer manager with multipart upload.
 	uploader := transfermanager.New(&b.Client.Client, func(o *transfermanager.Options) {
 		if partSize > 0 {
 			o.PartSizeBytes = partSize
@@ -210,11 +197,10 @@ func (b *R2Bucket) PutStream(reader io.Reader, bucketPath string, partSize int64
 		}
 	})
 
-	// Upload using the manager with the seekable bytes.Reader.
-	_, err = uploader.UploadObject(context.TODO(), &transfermanager.UploadObjectInput{
+	_, err := uploader.UploadObject(context.TODO(), &transfermanager.UploadObjectInput{
 		Bucket: aws.String(b.Name),
 		Key:    aws.String(bucketPath),
-		Body:   bytes.NewReader(data),
+		Body:   reader,
 	})
 
 	return err
