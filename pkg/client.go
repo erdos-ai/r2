@@ -74,9 +74,9 @@ func PresignClient(c Config) R2PresignClient {
 	return R2PresignClient{*s3.NewPresignClient(
 		s3c,
 		s3.WithPresignClientFromClientOptions(func(o *s3.Options) {
-			// The CLI returns presigned GETs as URLs only. The SDK's default response
-			// checksum validation adds x-amz-checksum-mode to the signed headers,
-			// which URL-only consumers cannot reproduce.
+			// The CLI returns presigned requests as URLs only, so consumers cannot
+			// reproduce checksum headers that are not encoded in the URL.
+			o.RequestChecksumCalculation = aws.RequestChecksumCalculationWhenRequired
 			o.ResponseChecksumValidation = aws.ResponseChecksumValidationWhenRequired
 		}),
 	)}
