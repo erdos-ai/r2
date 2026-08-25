@@ -71,7 +71,15 @@ type R2PresignClient struct {
 // used for generating presigned URLs.
 func PresignClient(c Config) R2PresignClient {
 	s3c := s3Client(c)
-	return R2PresignClient{*s3.NewPresignClient(s3c)}
+	return R2PresignClient{*s3.NewPresignClient(
+		s3c,
+		s3.WithPresignClientFromClientOptions(func(o *s3.Options) {
+			// The CLI returns presigned requests as URLs only, so consumers cannot
+			// reproduce checksum headers that are not encoded in the URL.
+			o.RequestChecksumCalculation = aws.RequestChecksumCalculationWhenRequired
+			o.ResponseChecksumValidation = aws.ResponseChecksumValidationWhenRequired
+		}),
+	)}
 }
 
 // PrintBuckets prints the creation date and name of each bucket in the R2 account.
