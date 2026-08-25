@@ -22,13 +22,26 @@ func TestPutStreamRejectsSubMinimumMultipartPartSize(t *testing.T) {
 }
 
 func TestPresignedGetURLDoesNotRequireChecksumHeader(t *testing.T) {
-	client := PresignClient(Config{
+	client := testPresignClient()
+	assertNoChecksumSignedHeaders(t, client.GetURL(R2URI{Bucket: "test-bucket", Path: "object.txt"}))
+}
+
+func TestPresignedPutURLDoesNotRequireChecksumHeader(t *testing.T) {
+	client := testPresignClient()
+	assertNoChecksumSignedHeaders(t, client.PutURL(R2URI{Bucket: "test-bucket", Path: "object.txt"}))
+}
+
+func testPresignClient() R2PresignClient {
+	return PresignClient(Config{
 		AccountID:       "test-account",
 		AccessKeyID:     "test-access-key",
 		SecretAccessKey: "test-secret-key",
 	})
+}
 
-	rawURL := client.GetURL(R2URI{Bucket: "test-bucket", Path: "object.txt"})
+func assertNoChecksumSignedHeaders(t *testing.T, rawURL string) {
+	t.Helper()
+
 	parsedURL, err := url.Parse(rawURL)
 	if err != nil {
 		t.Fatalf("parse presigned URL: %v", err)
@@ -46,8 +59,8 @@ func TestPresignedGetURLDoesNotRequireChecksumHeader(t *testing.T) {
 	}
 
 	for _, header := range strings.Split(strings.ToLower(signedHeaders), ";") {
-		if header == "x-amz-checksum-mode" {
-			t.Fatalf("presigned URL unexpectedly requires x-amz-checksum-mode: %q", signedHeaders)
+		if strings.HasPrefix(header, "x-amz-checksum-") {
+			t.Fatalf("presigned URL unexpectedly requires checksum header %q: %q", header, signedHeaders)
 		}
 	}
 }
