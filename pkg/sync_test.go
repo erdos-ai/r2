@@ -1,11 +1,14 @@
 package pkg
 
 import (
+	"bytes"
 	"io/fs"
+	"log"
 	"os"
 	"path/filepath"
 	"reflect"
 	"sort"
+	"strings"
 	"testing"
 )
 
@@ -54,16 +57,34 @@ func TestSyncR2ToLocalTreatsPrefixAsDirectory(t *testing.T) {
 			fake.put("photos/2024/b.jpg", []byte("b"))
 			fake.put("photos-old/c.jpg", []byte("c"))
 			fake.put("photosets/d.jpg", []byte("d"))
+			fake.put("photos/notes/", []byte("data")) // has content, but can't be a local file
 
 			dest := t.TempDir()
+			logs := captureLog(t)
 			bucket.SyncR2ToLocalWithPrefix(dest, prefix)
 
 			want := []string{"2024/b.jpg", "a.jpg"}
 			if got := listLocalFiles(t, dest); !reflect.DeepEqual(got, want) {
 				t.Fatalf("downloaded files = %v, want %v", got, want)
 			}
+
+			// Skipping a key that holds data must not be silent; empty folder markers are.
+			warnings := strings.Count(logs.String(), "Warning: skipping")
+			if warnings != 1 || !strings.Contains(logs.String(), "r2://test-bucket/photos/notes/") {
+				t.Fatalf("want one warning about photos/notes/, got log output:\n%s", logs.String())
+			}
 		})
 	}
+}
+
+// captureLog redirects the standard logger into a buffer for the rest of the test.
+func captureLog(t *testing.T) *bytes.Buffer {
+	t.Helper()
+	var buf bytes.Buffer
+	original := log.Writer()
+	log.SetOutput(&buf)
+	t.Cleanup(func() { log.SetOutput(original) })
+	return &buf
 }
 
 func writeTestFile(t *testing.T, path, content string) {

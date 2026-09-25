@@ -381,9 +381,13 @@ func (b *R2Bucket) SyncR2ToLocalWithPrefix(destinationPath string, prefix string
 			relativePath = strings.TrimPrefix(relativePath, "/")
 		}
 
-		// Skip folder markers such as "photos/". They have no content, and downloading one would
-		// create a file where later objects need a directory.
+		// A key ending in "/" can't be saved as a local file: writing it would create a file where
+		// later objects need a directory. Empty ones are folder markers, such as "photos/", and are
+		// skipped silently; directories are created as needed. Warn about any that hold data.
 		if relativePath == "" || strings.HasSuffix(relativePath, "/") {
+			if object.Size != nil && *object.Size > 0 {
+				log.Printf("Warning: skipping r2://%s/%s - keys ending in \"/\" can't be saved as local files", b.Name, objectPath)
+			}
 			continue
 		}
 
