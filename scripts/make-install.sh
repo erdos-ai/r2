@@ -74,18 +74,50 @@ tar -xzf "$HOME/$ARCHIVE" -C "$INSTALL_DIR" || {
   exit 1
 }
 
-chmod +x "$INSTALL_DIR/$BINARY_NAME"
+chmod 755 "$INSTALL_DIR/$BINARY_NAME"
+
+# Every release of this CLI contains its R2 endpoint. Checking for it means an unrelated program
+# that is also named r2, such as radare2, is never replaced or removed.
+is_r2_cli() {
+  grep -qF "r2.cloudflarestorage.com" "$1" 2>/dev/null
+}
+
+# /usr/local/bin is on the default PATH on Linux and macOS; macOS blocks writes to /usr/bin.
+DEST_DIR="/usr/local/bin"
+DEST="$DEST_DIR/$BINARY_NAME"
+# Releases before v0.4.2 installed here, which a custom PATH may search before /usr/local/bin.
+OLD_DEST="/usr/bin/$BINARY_NAME"
+
+if [ -e "$DEST" ] && ! is_r2_cli "$DEST"; then
+  echo "Error: $DEST is a different program (possibly radare2), so it was not replaced." >&2
+  echo "The r2 CLI is in $INSTALL_DIR. To use it, add it to your PATH:" >&2
+  echo "  export PATH=\"$INSTALL_DIR:\$PATH\"" >&2
+  exit 1
+fi
 
 if [ "$(id -u)" -eq 0 ]; then
-  echo "Installing to /usr/bin/${BINARY_NAME}..."
-  mv "$INSTALL_DIR/$BINARY_NAME" "/usr/bin/$BINARY_NAME"
+  echo "Installing to ${DEST}..."
+  mkdir -p -m 755 "$DEST_DIR"
+  mv "$INSTALL_DIR/$BINARY_NAME" "$DEST"
   rm -rf "$INSTALL_DIR"
+  if is_r2_cli "$OLD_DEST"; then
+    rm -f "$OLD_DEST"
+    echo "Removed an older installation at ${OLD_DEST}."
+  fi
+  FOUND=$(command -v "$BINARY_NAME" || true)
+  if [ "$FOUND" != "$DEST" ]; then
+    echo "Warning: '${BINARY_NAME}' runs ${FOUND:-nothing} rather than ${DEST}; check your PATH." >&2
+  fi
   echo "Installation complete! Run '${BINARY_NAME} --version' to verify."
 else
   echo "Installation successful!"
   echo ""
   echo "Since you're not running as root, manual steps required:"
-  echo "  sudo mv \"$INSTALL_DIR/$BINARY_NAME\" \"/usr/bin/$BINARY_NAME\""
+  echo "  sudo mkdir -p -m 755 $DEST_DIR"
+  echo "  sudo mv \"$INSTALL_DIR/$BINARY_NAME\" \"$DEST\""
+  if is_r2_cli "$OLD_DEST"; then
+    echo "  sudo rm \"$OLD_DEST\"  # older installation that could run instead"
+  fi
   echo "  rm -rf \"$INSTALL_DIR\""
   echo ""
   echo "Or add to your PATH:"
