@@ -76,16 +76,19 @@ tar -xzf "$HOME/$ARCHIVE" -C "$INSTALL_DIR" || {
 
 chmod +x "$INSTALL_DIR/$BINARY_NAME"
 
+# /usr/local/bin is on the default PATH on Linux and macOS; macOS blocks writes to /usr/bin.
 if [ "$(id -u)" -eq 0 ]; then
-  echo "Installing to /usr/bin/${BINARY_NAME}..."
-  mv "$INSTALL_DIR/$BINARY_NAME" "/usr/bin/$BINARY_NAME"
+  echo "Installing to /usr/local/bin/${BINARY_NAME}..."
+  mkdir -p /usr/local/bin
+  mv "$INSTALL_DIR/$BINARY_NAME" "/usr/local/bin/$BINARY_NAME"
   rm -rf "$INSTALL_DIR"
   echo "Installation complete! Run '${BINARY_NAME} --version' to verify."
 else
   echo "Installation successful!"
   echo ""
   echo "Since you're not running as root, manual steps required:"
-  echo "  sudo mv \"$INSTALL_DIR/$BINARY_NAME\" \"/usr/bin/$BINARY_NAME\""
+  echo "  sudo mkdir -p /usr/local/bin"
+  echo "  sudo mv \"$INSTALL_DIR/$BINARY_NAME\" \"/usr/local/bin/$BINARY_NAME\""
   echo "  rm -rf \"$INSTALL_DIR\""
   echo ""
   echo "Or add to your PATH:"
