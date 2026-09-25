@@ -315,9 +315,13 @@ func (b *R2Bucket) SyncLocalToR2WithPrefix(sourcePath string, prefix string, fil
 
 		// If path is a file, upload it
 		if !info.IsDir() {
-			// Get relative path from source directory
-			relativePath := strings.TrimPrefix(path, sourcePath)
-			relativePath = strings.TrimPrefix(relativePath, "/")
+			// Get relative path from source directory. filepath.Walk cleans the paths it visits, so
+			// trimming sourcePath as a string breaks for sources like "./dir" or ".".
+			relativePath, err := filepath.Rel(sourcePath, path)
+			if err != nil {
+				return err
+			}
+			relativePath = filepath.ToSlash(relativePath)
 
 			if filter != nil && !filter(relativePath) {
 				return nil
@@ -356,6 +360,12 @@ func (b *R2Bucket) SyncR2ToLocalWithPrefix(destinationPath string, prefix string
 		log.Fatal("Destination path must be a directory.")
 	}
 
+	// Treat the prefix as a directory, like the other sync directions, so "photos" does not also
+	// match "photos-old/..."
+	if prefix != "" && !strings.HasSuffix(prefix, "/") {
+		prefix = prefix + "/"
+	}
+
 	filter := firstFilter(filters...)
 
 	// Iterate through objects with the specified prefix and download necessary ones
@@ -369,6 +379,16 @@ func (b *R2Bucket) SyncR2ToLocalWithPrefix(destinationPath string, prefix string
 			relativePath = strings.TrimPrefix(objectPath, prefix)
 			// Also remove leading slash if present
 			relativePath = strings.TrimPrefix(relativePath, "/")
+		}
+
+		// A key ending in "/" can't be saved as a local file: writing it would create a file where
+		// later objects need a directory. Empty ones are folder markers, such as "photos/", and are
+		// skipped silently; directories are created as needed. Warn about any that hold data.
+		if relativePath == "" || strings.HasSuffix(relativePath, "/") {
+			if object.Size != nil && *object.Size > 0 {
+				log.Printf("Warning: skipping r2://%s/%s - keys ending in \"/\" can't be saved as local files", b.Name, objectPath)
+			}
+			continue
 		}
 
 		if filter != nil && !filter(relativePath) {
