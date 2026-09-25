@@ -28,15 +28,7 @@ func TestPutStreamUploadsFromPipe(t *testing.T) {
 
 	// A pipe is what `r2 pipe` receives on stdin. *os.File implements io.Seeker, but seeking a
 	// pipe fails, which previously aborted the upload with "illegal seek".
-	reader, writer, err := os.Pipe()
-	if err != nil {
-		t.Fatalf("pipe: %v", err)
-	}
-	defer reader.Close()
-	go func() {
-		writer.Write([]byte("hello from stdin\n"))
-		writer.Close()
-	}()
+	reader := pipeWith(t, []byte("hello from stdin\n"))
 
 	if err := bucket.PutStream(reader, "streamed.txt", minMultipartPartSize, 5); err != nil {
 		t.Fatalf("PutStream from pipe: %v", err)
@@ -49,6 +41,48 @@ func TestPutStreamUploadsFromPipe(t *testing.T) {
 	if string(body) != "hello from stdin\n" {
 		t.Fatalf("uploaded body = %q, want %q", body, "hello from stdin\n")
 	}
+}
+
+func TestPutStreamUploadsLargePipeInParts(t *testing.T) {
+	fake, bucket := newFakeS3(t, "test-bucket")
+
+	// 12 MiB of non-repeating bytes, so misordered or dropped parts change the result. With 5 MiB
+	// parts this streams as three parts of unknown total size, like a piped backup.
+	data := make([]byte, 12*1024*1024)
+	for i := range data {
+		data[i] = byte(i % 251)
+	}
+	reader := pipeWith(t, data)
+
+	if err := bucket.PutStream(reader, "backup.tar", minMultipartPartSize, 5); err != nil {
+		t.Fatalf("PutStream from pipe: %v", err)
+	}
+
+	body, ok := fake.object("backup.tar")
+	if !ok {
+		t.Fatalf("object was not uploaded; bucket has %v", fake.keys())
+	}
+	if !bytes.Equal(body, data) {
+		t.Fatalf("uploaded %d bytes that differ from the %d bytes piped in", len(body), len(data))
+	}
+	if parts := fake.multipartParts("backup.tar"); parts != 3 {
+		t.Fatalf("uploaded in %d parts, want 3", parts)
+	}
+}
+
+// pipeWith returns the read end of an os.Pipe that yields data and then EOF, like piped stdin.
+func pipeWith(t *testing.T, data []byte) *os.File {
+	t.Helper()
+	reader, writer, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("pipe: %v", err)
+	}
+	t.Cleanup(func() { reader.Close() })
+	go func() {
+		writer.Write(data)
+		writer.Close()
+	}()
+	return reader
 }
 
 func TestStreamBodyHidesSeekerOnlyWhenSeekFails(t *testing.T) {
