@@ -2,6 +2,22 @@
 
 This changelog goes through all the changes that have been made in each release.
 
+## [0.4.2](https://github.com/erdos-ai/r2/compare/v0.4.1...v0.4.2) (2026-09-25)
+
+
+### Bug Fixes
+
+* **configure:** honor --profile and default flag-only setups ([#96](https://github.com/erdos-ai/r2/issues/96)) ([cca5981](https://github.com/erdos-ai/r2/commit/cca5981dd06104d395b273bf70c2bb0d3e5f5d57))
+* **install:** install to /usr/local/bin ([#97](https://github.com/erdos-ai/r2/issues/97)) ([3f1d342](https://github.com/erdos-ai/r2/commit/3f1d342b231a3fb0f11d3c355004e8714cfeee12))
+* **pipe:** stream piped stdin without seeking ([#94](https://github.com/erdos-ai/r2/issues/94)) ([ffdc6c1](https://github.com/erdos-ai/r2/commit/ffdc6c1116729b3639f93bd2c1587d387c6e3ff5))
+* **sync:** map keys relative to the sync root ([#95](https://github.com/erdos-ai/r2/issues/95)) ([1011c7f](https://github.com/erdos-ai/r2/commit/1011c7f2c238f2beab75c8fa4f98ddb3eb7a1d42))
+
+
+### Documentation
+
+* deprecate r2 ahead of archiving ([#98](https://github.com/erdos-ai/r2/issues/98)) ([3813dfd](https://github.com/erdos-ai/r2/commit/3813dfde1b2098a743b86719fdc41df17ca99e67))
+* only run the uninstall script if its download succeeds ([#101](https://github.com/erdos-ai/r2/issues/101)) ([2f2af2a](https://github.com/erdos-ai/r2/commit/2f2af2a29528b2289142a61a680bcddce883b00e))
+
 ## [0.4.1](https://github.com/erdos-ai/r2/compare/v0.4.0...v0.4.1) (2026-09-12)
 
 
