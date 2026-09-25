@@ -330,14 +330,13 @@ var configureCmd = &cobra.Command{
 	Long: `Configure R2 access by providing Cloudflare R2 API Token credentials.
 
 Configuration can be done interactively or by passing flags. If you pass flags,
-you must provide both the access key ID and secret access key, otherwise the
-command will fail.
+you must provide the account ID, access key ID, and secret access key.
 
 To configure interactively, run:
   r2 configure
 
 To configure with flags, run:
-  r2 configure --access-key-id <access-key-id> \
+  r2 configure --account-id <account-id> --access-key-id <access-key-id> \
     --secret-access-key <secret-access-key>
 
 If you have multiple R2 tokens, you can configure a named profile by passing
@@ -347,8 +346,8 @@ the --profile flag.
     r2 configure --profile my-profile
 
   With flags:
-    r2 configure --profile my-profile --access-key-id <access-key-id> \
-      --secret-access-key <secret-access-key>
+    r2 configure --profile my-profile --account-id <account-id> \
+      --access-key-id <access-key-id> --secret-access-key <secret-access-key>
 
 Profiles are stored in ~/.r2 and can be used by passing the --profile flag to
 any command.
@@ -357,7 +356,7 @@ To list available profiles, run:
   r2 configure --list
 
 To generate an API Token, follow Cloudflare's guide at:
-  https://developers.cloudflare.com/r2/data-access/s3-api/tokens/
+  https://developers.cloudflare.com/r2/api/tokens/
 
 Be careful not to share your API Token credentials with anyone.`,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -408,10 +407,15 @@ Be careful not to share your API Token credentials with anyone.`,
 			} else {
 				// Check if configuration provided
 				if c.AccountID != "" && c.AccessKeyID != "" && c.SecretAccessKey != "" {
+					// Configuring with flags writes the default profile unless one is named
+					if c.Profile == "" {
+						c.Profile = "default"
+					}
 					writeConfig(c)
 				} else {
-					// If no configuration provided, get configuration interactively
-					writeConfig(getCredentials(""))
+					// If no configuration provided, get configuration interactively. The user is
+					// only prompted for a profile name if --profile was not passed.
+					writeConfig(getCredentials(c.Profile))
 				}
 			}
 		}
@@ -425,7 +429,7 @@ func init() {
 
 	// Add flags to the configure command
 	configureCmd.Flags().BoolP("list", "l", false, "List all named profiles")
-	configureCmd.Flags().String("profile", "", "Configure a named profile")
+	configureCmd.Flags().StringP("profile", "p", "", "Configure a named profile")
 	configureCmd.Flags().String("account-id", "", "R2 Account ID")
 	configureCmd.Flags().String("access-key-id", "", "R2 Access Key ID")
 	configureCmd.Flags().String("secret-access-key", "", "R2 Secret Access Key")
