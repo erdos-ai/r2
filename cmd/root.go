@@ -15,10 +15,9 @@ var rootCmd = &cobra.Command{
 	Short: "Command Line Interface for Cloudflare R2 Storage",
 	Long: `r2 is a command line interface for working with Cloudflare's R2 Storage.
 
-Cloudflare's R2 implements the S3 API, attempting to allow users and their
-applications to migrate easily, but importantly lacks the key, simple-to-use
-features provided by the AWS CLI's s3 subcommand, as opposed to the more complex
-and verbose API calls of the s3api subcommand. This CLI fills that gap.`,
+r2 is no longer maintained, and v0.4.2 is the final release. Use rclone or the
+AWS CLI with an R2 endpoint instead. Equivalent commands are listed at:
+  https://github.com/erdos-ai/r2#migrating-off-r2`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// If the version flag is set, print version information and quit
 		if v, _ := cmd.Flags().GetBool("version"); v {

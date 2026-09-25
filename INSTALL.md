@@ -1,5 +1,9 @@
 # Installing r2
 
+> [!WARNING]
+> `r2` is no longer maintained, and v0.4.2 is the final release. These instructions still work. See
+> [Migrating off r2](README.md#migrating-off-r2) for maintained alternatives.
+
 ## CLI
 
 The zero-dependency CLI is available for Linux and macOS and can be installed with the following
