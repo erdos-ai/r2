@@ -20,7 +20,8 @@ there when run as root. It never replaces a different program named `r2`, such a
 To uninstall, run:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/erdos-ai/r2/main/uninstall.sh | sudo sh
+script=$(curl -fsSL https://raw.githubusercontent.com/erdos-ai/r2/main/uninstall.sh) &&
+  sudo sh -c "$script"
 ```
 
 This removes the CLI from `/usr/local/bin` and `/usr/bin`, and leaves your credentials in `~/.r2`.
