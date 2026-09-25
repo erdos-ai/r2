@@ -2,6 +2,10 @@
 
 `r2` is a library and command line interface for working with Cloudflare's R2 Storage.
 
+> [!WARNING]
+> `r2` is no longer maintained, and v0.4.2 is the final release. See
+> [Migrating off r2](README.md#migrating-off-r2) for maintained alternatives and equivalent commands.
+
 ## CLI
 
 ```bash
@@ -13,7 +17,7 @@ r2 [command] [flags]
 - `configure` — Configure R2 access
 - `cp` — Copy an object from one R2 path to another
 - `help` — Help about any command
-- `ls` — List either all buckets or all objects in a bucket
+- `ls` — List all objects in a bucket
 - `mb` — Create an R2 bucket
 - `mv` — Moves a local file or R2 object to another location locally or in R2.
 - `pipe` — Stream data from stdin to an R2 object
@@ -85,7 +89,7 @@ r2 sync --exclude 'node_modules/**' --exclude '**/*.tmp' --exclude-from .syncign
 
 ### Pipe Command
 
-The `pipe` command allows you to stream data from stdin directly to R2 without creating temporary files. This is useful for backup scripts, data pipelines, and real-time data processing. Note: Data is buffered in memory during upload.
+The `pipe` command allows you to stream data from stdin directly to R2 without creating temporary files. This is useful for backup scripts, data pipelines, and real-time data processing. Data is uploaded in parts as it is read, so it doesn't need to fit in memory.
 
 #### Basic Usage
 
@@ -142,7 +146,7 @@ func main() {
     Profile:         "default",
     AccountID:       "<ACCOUNT ID>",
     AccessKeyID:     "<ACCESS KEY ID>",
-    SecretAccessKey: "<SECRET ACCESS KEY>"
+    SecretAccessKey: "<SECRET ACCESS KEY>",
   }
   client := r2.Client(config)
 

@@ -1,5 +1,8 @@
 # Repository Guidelines
 
+> **Archived.** `r2` is no longer maintained, and v0.4.2 is the final release. Don't start new work
+> here; see [Migrating off r2](README.md#migrating-off-r2).
+
 This repository hosts `r2`, a Go (1.24) CLI and library for Cloudflare R2 built on Cobra and the AWS S3 SDK. Use this guide to contribute changes consistently and safely.
 
 ## Project Structure & Module Organization

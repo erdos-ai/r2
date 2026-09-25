@@ -1,3 +1,6 @@
+// Deprecated: r2 is no longer maintained, and v0.4.2 is the final release. Use rclone or the AWS
+// CLI with an R2 endpoint, or the AWS SDK for Go v2 directly. See
+// https://github.com/erdos-ai/r2#migrating-off-r2
 module github.com/erdos-ai/r2
 
 go 1.24
