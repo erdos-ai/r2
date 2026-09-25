@@ -200,10 +200,23 @@ func (b *R2Bucket) PutStream(reader io.Reader, bucketPath string, partSize int64
 	_, err := uploader.UploadObject(context.TODO(), &transfermanager.UploadObjectInput{
 		Bucket: aws.String(b.Name),
 		Key:    aws.String(bucketPath),
-		Body:   reader,
+		Body:   streamBody(reader),
 	})
 
 	return err
+}
+
+// streamBody hides io.Seeker from readers that cannot actually seek, such as a pipe on stdin. The
+// transfer manager measures any io.Seeker up front, and *os.File implements io.Seeker even when it
+// wraps a pipe, so passing piped stdin through unchanged fails with "illegal seek". Readers that
+// can seek, like redirected regular files, are returned as-is so their size is still known.
+func streamBody(reader io.Reader) io.Reader {
+	if seeker, ok := reader.(io.Seeker); ok {
+		if _, err := seeker.Seek(0, io.SeekCurrent); err != nil {
+			return struct{ io.Reader }{reader}
+		}
+	}
+	return reader
 }
 
 // Get gets an object from a bucket. The bucketPath argument takes the path to the object in the
