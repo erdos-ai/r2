@@ -784,3 +784,111 @@ secret_access_key = second-secret
 		t.Errorf("Profile.Profile should be 'production', got '%s'", profile.Profile)
 	}
 }
+
+func TestConfigureCmd_Flags_WritesNamedOrDefaultProfile(t *testing.T) {
+	testCases := []struct {
+		name        string
+		profileArgs []string
+		wantProfile string
+	}{
+		{"no profile flag", nil, "default"},
+		{"long profile flag", []string{"--profile", "work"}, "work"},
+		{"short profile flag", []string{"-p", "work"}, "work"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			configPath := filepath.Join(t.TempDir(), ".r2")
+			args := append(tc.profileArgs,
+				"--account-id", "flag-account",
+				"--access-key-id", "flag-key",
+				"--secret-access-key", "flag-secret",
+			)
+
+			runConfigure(t, configPath, "", args...)
+
+			assertStoredProfile(t, configPath, tc.wantProfile, "flag-account")
+		})
+	}
+}
+
+func TestConfigureCmd_Interactive_UsesProfileFlag(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), ".r2")
+
+	output := runConfigure(t, configPath, "prompt-account\nprompt-key\nprompt-secret\n", "--profile", "work")
+
+	if strings.Contains(output, "Profile [default]") {
+		t.Errorf("did not expect a profile prompt when --profile is set, got output %q", output)
+	}
+	assertStoredProfile(t, configPath, "work", "prompt-account")
+}
+
+func TestConfigureCmd_Interactive_PromptsForProfileWhenUnset(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), ".r2")
+
+	output := runConfigure(t, configPath, "\nprompt-account\nprompt-key\nprompt-secret\n")
+
+	if !strings.Contains(output, "Profile [default]") {
+		t.Errorf("expected a profile prompt, got output %q", output)
+	}
+	assertStoredProfile(t, configPath, "default", "prompt-account")
+}
+
+// runConfigure executes `r2 --config configPath configure args...` with input on stdin and returns
+// what it printed.
+func runConfigure(t *testing.T, configPath, input string, args ...string) string {
+	t.Helper()
+
+	originalConfig := R2ConfigFile
+	originalStdin := os.Stdin
+	resetConfigureFlags()
+	t.Cleanup(func() {
+		R2ConfigFile = originalConfig
+		os.Stdin = originalStdin
+		rootCmd.SetArgs([]string{})
+		resetConfigureFlags()
+	})
+
+	stdinPath := filepath.Join(t.TempDir(), "stdin")
+	if err := os.WriteFile(stdinPath, []byte(input), 0600); err != nil {
+		t.Fatalf("write stdin: %v", err)
+	}
+	stdin, err := os.Open(stdinPath)
+	if err != nil {
+		t.Fatalf("open stdin: %v", err)
+	}
+	t.Cleanup(func() { stdin.Close() })
+	os.Stdin = stdin
+
+	return captureStdout(t, func() {
+		rootCmd.SetArgs(append([]string{"--config", configPath, "configure"}, args...))
+		if err := rootCmd.Execute(); err != nil {
+			t.Fatalf("execute: %v", err)
+		}
+	})
+}
+
+// resetConfigureFlags restores the flags the configure tests use to their defaults. Cobra keeps
+// flag values on the global commands between executions, so flags set by an earlier test, such as
+// `configure --list`, would otherwise leak into the next run.
+func resetConfigureFlags() {
+	rootCmd.PersistentFlags().Set("config", "")
+	configureCmd.Flags().Set("list", "false")
+	for _, name := range []string{"profile", "account-id", "access-key-id", "secret-access-key"} {
+		configureCmd.Flags().Set(name, "")
+	}
+}
+
+func assertStoredProfile(t *testing.T, configPath, profile, accountID string) {
+	t.Helper()
+
+	R2ConfigFile = configPath
+	profiles := getConfig(false)
+	stored, ok := profiles[profile]
+	if !ok {
+		t.Fatalf("profile %q not written; config has %v", profile, getMapKeys(profiles))
+	}
+	if stored.AccountID != accountID {
+		t.Fatalf("profile %q has account ID %q, want %q", profile, stored.AccountID, accountID)
+	}
+}
